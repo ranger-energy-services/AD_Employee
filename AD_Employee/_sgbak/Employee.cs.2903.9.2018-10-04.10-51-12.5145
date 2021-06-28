@@ -1,0 +1,206 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.DirectoryServices;
+using System.Text.RegularExpressions;
+
+namespace AD_Employee
+{
+    public class Employee
+    {
+
+        public bool changeTitle(string employeeIDstring, string newTitle)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (!isValidPropertyData(newTitle)) throw new System.ArgumentException("invalid title", newTitle);
+
+            if (newTitle == lookupOnePropertyValue(employeeIDstring, "title")) return false; // no change necessary
+
+            if (changeOneProperty(employeeIDstring, "title", newTitle) &&
+                changeOneProperty(employeeIDstring, "description", newTitle)) return true;
+
+            throw new System.InvalidOperationException("failed: changeTitle(" + employeeIDstring + "," + newTitle + ")");
+        }
+
+        public bool changeCompany(string employeeIDstring, string company)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (!isValidPropertyData(company)) throw new System.ArgumentException("invalid company", company);
+
+            if (company == lookupOnePropertyValue(employeeIDstring, "company")) return false; // no change necessary
+
+            if (changeOneProperty(employeeIDstring, "company", company)) return true;
+
+            throw new System.InvalidOperationException("failed: changeCompany(" + employeeIDstring + "," + company + ")");
+        }
+
+        public bool changeOffice(string employeeIDstring, string office)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (!isValidPropertyData(office)) throw new System.ArgumentException("invalid office", office);
+
+            if (office == lookupOnePropertyValue(employeeIDstring, "physicaldeliveryofficename")) return false; // no change necessary
+
+            if (changeOneProperty(employeeIDstring, "physicaldeliveryofficename", office)) return true;
+
+            throw new System.InvalidOperationException("failed: changeOffice(" + employeeIDstring + "," + office + ")");
+        }
+
+        public bool changeLocation(string employeeIDstring, string division, string street, string city, string state, string zipcode)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (!isValidPropertyData(division)) throw new System.ArgumentException("invalid division", division);
+            if (!isValidPropertyData(street)) throw new System.ArgumentException("invalid street", street);
+            if (!isValidPropertyData(city)) throw new System.ArgumentException("invalid city", city);
+            if (!isValidPropertyData(state)) throw new System.ArgumentException("invalid state", state);
+            if (!isValidPropertyData(zipcode)) throw new System.ArgumentException("invalid zipcode", zipcode);
+
+            if ((division == lookupOnePropertyValue(employeeIDstring, "division"))
+                && (street == lookupOnePropertyValue(employeeIDstring, "streetaddress"))
+                && (city == lookupOnePropertyValue(employeeIDstring, "l"))
+                && (state == lookupOnePropertyValue(employeeIDstring, "st"))
+                && (zipcode == lookupOnePropertyValue(employeeIDstring, "postalcode"))) return false; // no change necessary
+
+            if (changeOneProperty(employeeIDstring, "division", division) &&
+                changeOneProperty(employeeIDstring, "streetaddress", street) &&
+                changeOneProperty(employeeIDstring, "l", city) &&
+                changeOneProperty(employeeIDstring, "st", state) &&
+                changeOneProperty(employeeIDstring, "postalcode", zipcode)) return true;
+
+            throw new System.InvalidOperationException
+                ("failed: changeLocation(" + employeeIDstring + "," + division + "," + street + "," + city + "," + state + "," + zipcode + ")");
+        }
+
+        public bool changeManager(string employeeIDstring, string managerIDstring)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+
+            string managerDistinguishedName = lookupOnePropertyValue(managerIDstring, "distinguishedname");
+            if (managerDistinguishedName == lookupOnePropertyValue(employeeIDstring, "manager")) return false; // no change necessary
+
+            if (changeOneProperty(employeeIDstring, "manager", managerDistinguishedName)) return true;
+
+            throw new System.InvalidOperationException("failed: changeManager(" + employeeIDstring + "," + managerIDstring + ")");
+        }
+
+        public bool nameChangeNecessary(string employeeIDstring, string newName)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (!isValidPropertyData(newName)) throw new System.ArgumentException("invalid new name", newName);
+
+            if (newName == lookupOnePropertyValue(employeeIDstring, "cn")) return false; // no change necessary
+
+            return true;
+        }
+
+        public bool isValidEmployeeID(string employeeIDstring)
+        {
+            if (Regex.IsMatch(employeeIDstring, validEmployeeID)) return true;
+            return false;
+        }
+
+        public bool isValidPropertyData(string employeePropertyData)
+        {
+            // regular expression match string for properties/attribute data:
+            // letters, commas, apostrophes, hyphens, parentheses and whitespace
+            // length of 1 to 64 characters
+            string toMatchRegEx = @"^[A-Za-z0-9,\.'\-\(\)\s]{1,64}$";
+
+            if (Regex.IsMatch(employeePropertyData, toMatchRegEx)) return true;
+            else return false;
+        }
+
+        public bool isValidPropertyDataLong(string employeePropertyData)
+        {
+            // regular expression match string for properties/attribute data:
+            // letters, commas, apostrophes, hyphens, parentheses and whitespace
+            // length of 1 to 64 characters
+            string toMatchRegEx = @"^[A-Za-z0-9,=\.'\-\(\)\s]{1,256}$";
+
+            if (Regex.IsMatch(employeePropertyData, toMatchRegEx)) return true;
+            else return false;
+        }
+
+
+        public string lookupOnePropertyValue(string employeeIDstring, string propertyName)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+
+            try
+            {
+                DirectoryEntry myLdapConnection = createDirectoryEntry();
+                DirectorySearcher search = new DirectorySearcher(myLdapConnection);
+                search.Filter = "(employeeID=" + employeeIDstring + ")";
+                SearchResult result = search.FindOne();
+                if (result == null) return null; // throw new System.InvalidOperationException("employeeID not found: " + employeeIDstring);
+
+                // employee exists, loop through LDAP fields
+                ResultPropertyCollection fields = result.Properties;
+                foreach (String ldapField in fields.PropertyNames)
+                {
+                    if (ldapField == propertyName)
+                    {
+                        string returnString = "";
+                        foreach (Object myCollection in fields[ldapField])
+                            returnString += myCollection.ToString();
+                        return returnString;
+                    }
+                }
+                return null; // throw new System.InvalidOperationException("propertyName " + propertyName + " not found for employee " + employeeIDstring);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+        }
+
+        // private functions
+
+        private bool changeOneProperty(string employeeIDstring, string propertyToChange, string newValue)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+            if (propertyToChange == "manager")
+            {
+                if (!isValidPropertyDataLong(newValue)) throw new System.ArgumentException("invalid attribute value", newValue);
+            }
+            else
+            {
+                if (!isValidPropertyData(newValue)) throw new System.ArgumentException("invalid attribute value", newValue);
+            }
+
+            try
+            {
+                DirectoryEntry myLdapConnection = createDirectoryEntry();
+                DirectorySearcher search = new DirectorySearcher(myLdapConnection);
+                search.Filter = "(employeeID=" + employeeIDstring + ")";
+                search.PropertiesToLoad.Add(propertyToChange);
+
+                SearchResult result = search.FindOne();
+                if (result == null) throw new System.InvalidOperationException("employee not found: " + employeeIDstring);
+
+                DirectoryEntry entryToUpdate = result.GetDirectoryEntry();
+                entryToUpdate.Properties[propertyToChange].Value = newValue;
+                entryToUpdate.CommitChanges();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private DirectoryEntry createDirectoryEntry()
+        {
+            // create and return new LDAP connection
+            DirectoryEntry ldapConnection = new DirectoryEntry("bayouwellservices.com");
+            ldapConnection.Path = "LDAP://DC=bayouwellservices,DC=com";
+            ldapConnection.AuthenticationType = AuthenticationTypes.Secure;
+            return ldapConnection;
+        }
+
+    }
+}

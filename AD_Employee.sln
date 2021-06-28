@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AD_Employee", "AD_Employee\AD_Employee.csproj", "{9285BAC4-EC80-4318-BDA4-A9A86B987BB2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestAD", "TestAD\TestAD.csproj", "{9EF74A24-B6B9-4781-A51E-363D157E905B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9285BAC4-EC80-4318-BDA4-A9A86B987BB2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9285BAC4-EC80-4318-BDA4-A9A86B987BB2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9285BAC4-EC80-4318-BDA4-A9A86B987BB2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9285BAC4-EC80-4318-BDA4-A9A86B987BB2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EF74A24-B6B9-4781-A51E-363D157E905B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EF74A24-B6B9-4781-A51E-363D157E905B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EF74A24-B6B9-4781-A51E-363D157E905B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EF74A24-B6B9-4781-A51E-363D157E905B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
