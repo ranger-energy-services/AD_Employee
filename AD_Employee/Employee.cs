@@ -75,6 +75,18 @@ namespace AD_Employee
                 ("failed: changeLocation(" + employeeIDstring + "," + division + "," + street + "," + city + "," + state + "," + zipcode + ")");
         }
 
+        public bool changeOU(string employeeIDstring, string OUstring)
+        {
+            if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
+                     
+
+            if (changeOneProperty(employeeIDstring, "OU", OUstring)) return true;
+
+
+
+            throw new System.InvalidOperationException("failed: changeManager(" + employeeIDstring + ")");
+        }
+
         public bool changeManager(string employeeIDstring, string managerIDstring)
         {
             if (!isValidEmployeeID(employeeIDstring)) throw new System.ArgumentException("invalid employeeID", employeeIDstring);
@@ -226,18 +238,27 @@ namespace AD_Employee
                 strState = "Patriot Well";
             }
 
-            else if (strGroup == "Bowie" ||  strGroup == "Wharton" ||  strGroup == "Houston" ||   strGroup == "Pleasanton" ||  strGroup == "Midland" ||  strGroup == "Odessa"  )
+            else if (strGroup == "Bowie" || strGroup == "Wharton" || strGroup == "Houston" || strGroup == "Pleasanton" || strGroup == "Midland" || strGroup == "Odessa" || strGroup == "Big Spring" || strGroup == "Kermit" || strGroup == "Kilgore" || strGroup == "Snyder" || strGroup == "Andrews" || strGroup == "Denver City")
             {
                 strState = "Texas";
             }
-             else if (strGroup == "New Town" ||  strGroup == "Dickinson"  )
+             else if (strGroup == "New Town" ||  strGroup == "Dickinson"  || strGroup == "Belfield" )
             {
                 strState = "North Dakota";
             }
-            else if (strGroup == "Milliken"  )
+            else if (strGroup == "Milliken" || strGroup == "Brighton" || strGroup == "Hobbs" || strGroup == "Fort Morgan")
             {
                 strState = "Colorado";
             }
+            else if (strGroup == "Hobbs" || strGroup == "Artesia")
+            {
+                strState = "New Mexico";
+            }
+            else if (strGroup == "Casper" || strGroup == "Gillette")
+            {
+                strState = "Wyoming";
+            }
+
 
 
 
@@ -261,6 +282,28 @@ namespace AD_Employee
                 {
                     de.Properties[PropertyName].Add(PropertyValue);
                 }
+            }
+        }
+
+
+        // create new user from workflow
+        public string TermUser(string employeeID)
+        {
+            try
+            {
+                DataSet1TableAdapters.ADPEmployeesTableAdapter EmpTa = new DataSet1TableAdapters.ADPEmployeesTableAdapter();
+                DataSet1TableAdapters.EmployeesTableAdapter TicketEmpTa = new DataSet1TableAdapters.EmployeesTableAdapter();
+                //set status to term ?????
+               // int i = TicketEmpTa.UpdateNoAllowance("Active", title, location, fullName, Convert.ToDecimal(rate), type, Convert.ToDecimal(rate2), profitCenter, locationCode, LOB, "", employeeID);
+               // i = EmpTa.UpdateNoAllowance(location, profitCenter, fullName, title, "", "Active", supervisor, email, locationCode, LOBCode, deptCode, dept, LOB, employeeID);
+               
+                          
+                DisableandMoveAccount(employeeID);              
+                return "ok";
+            }
+            catch (Exception e)
+            {
+                return e.Message;
             }
         }
 
@@ -361,8 +404,9 @@ namespace AD_Employee
 
 
                 DirectoryEntry de = createDirectoryEntry(locationName, LOBName);
-                de.Username = "jason.perry";
-                de.Password = "R3dfish37";
+            
+                de.Username = "jpadmin";
+                de.Password = "Pwnzor93";
                 /// 1. Create user account
                 DirectoryEntries users = de.Children;
                 DirectoryEntry newuser = users.Add("CN=" + ADName, "user");
@@ -375,7 +419,7 @@ namespace AD_Employee
                 SetProperty(newuser, "mail", email);
                 SetProperty(newuser, "title", title);
                 newuser.CommitChanges();
-                //SetPW(login, "R@ng3r123");
+                //SetPW(login, "R@ng3r12");
                 SetPassword(newuser.Path);
                 newuser.CommitChanges();
                 /// 4. Enable account
@@ -398,7 +442,7 @@ namespace AD_Employee
         {
             PrincipalContext context = new PrincipalContext(ContextType.Domain);
             
-           context.ValidateCredentials("jason.perry", "R3dfish37");
+           context.ValidateCredentials("jpadmin", "Pwnzor93");
             UserPrincipal user = UserPrincipal.FindByIdentity(context, IdentityType.SamAccountName, userName);
          
             //Enable Account if it is disabled
@@ -415,11 +459,11 @@ namespace AD_Employee
             try
             {
                 DirectoryEntry usr = new DirectoryEntry();
-                usr.Username = "jason.perry";
-                usr.Password = "R3dfish37";
+                usr.Username = "jpadmin";
+                usr.Password = "Pwnzor93";
                 usr.Path = path;
                 usr.AuthenticationType = AuthenticationTypes.Secure;
-                object[] password = new object[] { "R@ng3rJP" };
+                object[] password = new object[] { "R@ng3r12" };
                 object ret = usr.Invoke("SetPassword", password);
                 usr.CommitChanges();
                 usr.Close();
@@ -456,12 +500,12 @@ namespace AD_Employee
             try
             {
                 //UF_DONT_EXPIRE_PASSWD 0x10000
-                de.Username = "jason.perry";
-                de.Password = "R3dfish37";
+                de.Username = "jpadmin";
+                de.Password = "Pwnzor93";
                 int exp = (int)de.Properties["userAccountControl"].Value;
                 de.Properties["userAccountControl"].Value = exp | 0x0001;
                 de.CommitChanges();
-                //UF_ACCOUNTDISABLE 0x0002
+                //UF_ACCOUNTEnable  ~0x0002
                 int val = (int)de.Properties["userAccountControl"].Value;
                 de.Properties["userAccountControl"].Value = val & ~0x0002;
                 de.CommitChanges();
@@ -472,10 +516,45 @@ namespace AD_Employee
             }
         }
 
-        public static void AddUserToGroup(DirectoryEntry de, DirectoryEntry deUser, string GroupName)
+        private  void DisableandMoveAccount(string employeeIDstring)
         {
+            try
+            {
+                DirectoryEntry myLdapConnection = createDirectoryEntry();
+                DirectorySearcher search = new DirectorySearcher(myLdapConnection);
+                search.Filter = "(employeeID=" + employeeIDstring + ")";
+             
 
+                SearchResult result = search.FindOne();
+                if (result == null) throw new System.InvalidOperationException("employee not found: " + employeeIDstring);
+
+                DirectoryEntry de = result.GetDirectoryEntry();
+              
+            
+                
+
+
+                DirectoryEntry de2 = new DirectoryEntry("LDAP://OU=Disabled Users - Waiting for Deletion,DC=bayouwellservices,DC=com");
+              
+                
+                de.Username = "jpadmin";
+                de.Password = "Pwnzor93";
+                //UF_ACCOUNTDISABLE 0x0002
+                int val = (int)de.Properties["userAccountControl"].Value;
+                de.Properties["userAccountControl"].Value = val | 0x0002;
+                de.CommitChanges();
+
+                de.MoveTo(de2);
+                de2.CommitChanges();
+                de2.Close();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
         }
+
+   
 
 
 
